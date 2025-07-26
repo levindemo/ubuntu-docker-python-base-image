@@ -1,0 +1,15 @@
+version: '3'
+services:
+  docker-python-base:
+    build: .
+#    image: eclipse-temurin:11-jre-slim
+    container_name: docker-python-base
+    restart: always
+    environment:
+      - HTTP_PROXY=http://127.0.0.1:1080
+      - HTTPS_PROXY=http://127.0.0.1:1080
+      - NO_PROXY=localhost,127.0.0.1
+      - JAVA_OPTS=-Xmx256m
+    ports:
+      - "8080:8080"
+      - "18080:18080"
