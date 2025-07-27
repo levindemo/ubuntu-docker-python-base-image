@@ -1,6 +1,8 @@
-# 基于Ubuntu的基础镜像，包含Docker客户端和Python 3.10
+# 基于Ubuntu的基础镜像，包含Docker客户端和Python 3.9
 FROM ubuntu:22.04
 
+#add port as argument
+ARG PORT=8080
 # 避免交互模式下的配置提示
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -21,15 +23,19 @@ RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - \
     && apt-get update && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装Python 3.10及相关工具
-RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3.10-dev \
-    python3.10-distutils \
+# 安装Python 3.9及相关工具
+
+RUN add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update
+
+RUN apt-get install -y \
+    python3.9 \
+    python3.9-dev \
+    python3.9-distutils \
     python3-pip \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/python3.10 /usr/bin/python \
-    && ln -s /usr/bin/pip3 /usr/bin/pip
+    && ln -s /usr/bin/python3.9 /usr/bin/python \
+    && ln -s /usr/bin/pip3 /usr/bin/pip || echo "ln -s /usr/bin/pip3 /usr/bin/pip failed"
 
 # 升级pip并安装Docker SDK for Python
 RUN pip install --upgrade pip \
@@ -42,4 +48,4 @@ RUN docker --version && python --version && pip --version
 WORKDIR /app
 
 # 容器启动时默认执行bash
-CMD ["/bin/bash"]
+CMD ["/bin/bash", "-c", "python3 -m http.server $PORT"]
