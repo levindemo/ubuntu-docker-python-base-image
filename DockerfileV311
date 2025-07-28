@@ -35,13 +35,50 @@ RUN apt-get install -y \
 RUN ln -s /usr/bin/python3.11 /usr/bin/python \
     && ln -s /usr/bin/pip3 /usr/bin/pip || echo "ln -s /usr/bin/pip3 /usr/bin/pip failed"
 
-
 # 升级pip并安装Docker SDK for Python
 RUN pip install --upgrade pip \
     && pip install docker
 
 # 验证安装
 RUN docker --version && python --version && pip --version
+
+
+#RUN #apt-get install -y vim \
+#    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+RUN apt-get install -y docker-ce docker-ce-cli containerd.io
+
+#install modprobe to load overlay
+RUN apt-get install --reinstall kmod
+
+RUN apt-get install -y  fuse-overlayfs
+#RUN #apt-get install -y iptables-legacy
+# modprobe: FATAL: Module overlay not found in directory /lib/modules/5.10.102.1-microsoft-standard-WSL2
+#OverlayFS is not supported in WSL2 because the kernel module is missing.
+#Docker inside WSL2 cannot use overlay2 storage driver.
+#You will get errors like failed to mount overlay: invalid argument.
+
+#use vfs
+RUN mkdir -p "/etc/docker" || echo "folder already exist"
+ADD etc_docker_daemon.json /etc/docker/daemon.json
+
+#failed to start daemon: Error initializing network controller: error obtaining controller instance: failed to register "bridge" driver: failed to add jump rules to ipv4 NAT table: failed to append jump rules to nat-PREROUTING:  (iptables failed: iptables --wait -t nat -A PREROUTING -m addrtype --dst-type LOCAL -j DOCKER: iptables v1.8.7 (nf_tables): Couldn't load match `addrtype':No such file or directory
+RUN apt-get install -y ebtables arptables
+
+ADD switch-to-legacy-iptables.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/switch-to-legacy-iptables.sh
+RUN /usr/local/bin/switch-to-legacy-iptables.sh
+ADD startDockerd.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/startDockerd.sh
+
+ADD run_with_nginx.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/run_with_nginx.sh
+
+ADD pull_nginx.py /usr/local/bin/
+RUN chmod +x /usr/local/bin/pull_nginx.py
 
 # 设置工作目录
 WORKDIR /app
